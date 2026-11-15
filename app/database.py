@@ -3,9 +3,13 @@
 from pathlib import Path
 
 import pandas as pd
-from sqlalchemy import Engine, create_engine, text
+from sqlalchemy import Connection, Engine, create_engine, text
 
+from app.config import PROJECT_ROOT
+
+VIEWS_FILE = PROJECT_ROOT / "sql" / "views.sql"
 ORDERS_TABLE = "orders"
+VIEWS: tuple[str, ...] = ("monthly_sales_by_country", "top_customers")
 ORDER_COLUMNS: tuple[str, ...] = (
     "order_id",
     "order_date",
@@ -41,8 +45,23 @@ def create_write_engine(path: Path) -> Engine:
     return create_engine(f"sqlite:///{path}")
 
 
+def _sql_statements(script: str) -> list[str]:
+    """Split a SQL script into statements, dropping ``--`` comments and blanks.
+
+    Enough for ``sql/views.sql``, which has no semicolons inside literals.
+    """
+    lines = [line for line in script.splitlines() if not line.lstrip().startswith("--")]
+    return [statement.strip() for statement in "\n".join(lines).split(";") if statement.strip()]
+
+
+def create_views(connection: Connection, views_file: Path = VIEWS_FILE) -> None:
+    """Create or replace the analytical views defined in ``views_file``."""
+    for statement in _sql_statements(views_file.read_text(encoding="utf-8")):
+        connection.execute(text(statement))
+
+
 def load_orders(engine: Engine, orders: pd.DataFrame) -> int:
-    """Rebuild the orders table and insert ``orders`` in one transaction.
+    """Rebuild the orders table, insert ``orders`` and recreate the views in one transaction.
 
     Rebuilding makes the load idempotent: running it twice gives the same database.
     Returns the number of rows inserted.
@@ -53,4 +72,5 @@ def load_orders(engine: Engine, orders: pd.DataFrame) -> int:
         orders.loc[:, list(ORDER_COLUMNS)].to_sql(
             ORDERS_TABLE, connection, if_exists="append", index=False
         )
+        create_views(connection)
     return len(orders)

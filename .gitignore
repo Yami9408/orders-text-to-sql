@@ -1,0 +1,23 @@
+# Environment and secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Tool caches
+.pytest_cache/
+.ruff_cache/
+
+# Generated data (keep the folder)
+data/*
+!data/.gitkeep
+
+# Temporary and OS files
+*.tmp
+*.log
+.DS_Store
+.idea/
+.vscode/

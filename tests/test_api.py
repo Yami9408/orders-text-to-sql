@@ -7,7 +7,12 @@ from sqlalchemy.exc import DBAPIError
 
 from app.config import Settings, get_settings
 from app.database import create_read_only_engine
-from app.errors import LLMRefusedError, LLMTimeoutError, LLMUnavailableError
+from app.errors import (
+    LLMRefusedError,
+    LLMTimeoutError,
+    LLMUnavailableError,
+    UnsupportedQuestionError,
+)
 from app.main import app, get_engine, get_sql_generator
 from tests.factories import build_database, make_order
 
@@ -105,6 +110,7 @@ def test_invalid_questions_are_rejected_before_the_llm(client, question):
         (LLMTimeoutError(), 504, "llm_timeout"),
         (LLMUnavailableError(), 502, "llm_unavailable"),
         (LLMRefusedError(), 422, "llm_refused"),
+        (UnsupportedQuestionError(), 422, "unsupported_question"),
     ],
 )
 def test_llm_errors_are_reported_clearly(client, error, status, code):

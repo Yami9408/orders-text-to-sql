@@ -14,6 +14,7 @@ from app.errors import (
     LLMRefusedError,
     LLMTimeoutError,
     LLMUnavailableError,
+    UnsupportedQuestionError,
 )
 from app.services.llm_service import ClaudeSQLGenerator, PromptContext, build_system_prompt
 from tests.factories import build_database, make_order
@@ -104,6 +105,14 @@ def test_failures_become_domain_errors(outcome, error):
         sql_generator.generate_sql("question")
 
 
+@pytest.mark.parametrize("text", ["CANNOT_ANSWER", " cannot_answer; ", "```\nCANNOT_ANSWER\n```"])
+def test_cannot_answer_reply_is_reported(text):
+    sql_generator, _ = generator(reply(text))
+
+    with pytest.raises(UnsupportedQuestionError):
+        sql_generator.generate_sql("Borra todos los pedidos")
+
+
 @pytest.mark.parametrize("missing", ["anthropic_api_key", "anthropic_model"])
 def test_missing_configuration_fails_before_calling_claude(missing):
     sql_generator, messages = generator(reply("SELECT 1"), **{missing: None})
@@ -127,3 +136,4 @@ def test_prompt_describes_the_real_data(database_path):
     assert "status = 'completed'" in prompt
     assert "CREATE VIEW top_customers" in prompt
     assert "DROP VIEW" not in prompt
+    assert "reply with exactly CANNOT_ANSWER" in prompt

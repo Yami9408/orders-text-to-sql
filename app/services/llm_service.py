@@ -21,6 +21,7 @@ from app.errors import (
     LLMRefusedError,
     LLMTimeoutError,
     LLMUnavailableError,
+    UnsupportedQuestionError,
 )
 
 logger = logging.getLogger(__name__)
@@ -29,6 +30,7 @@ MAX_TOKENS = 16000
 EFFORT = "low"  # one short SQL query does not need deep reasoning
 MAX_RETRIES = 1
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
+CANNOT_ANSWER = "CANNOT_ANSWER"  # the model's reply when no read-only query fits
 FENCE_PATTERN = re.compile(r"^```(?:sql)?\s*(.*?)\s*```$", re.DOTALL | re.IGNORECASE)
 
 
@@ -102,17 +104,25 @@ Rules:
 - Filter dates with ranges on order_date, for example
   order_date >= '2026-03-01' AND order_date < '2026-04-01'.
 - Give every computed column a descriptive snake_case alias, such as total_sales.
+- If the question asks to change data or the schema, or cannot be answered from these
+  tables and views, reply with exactly {CANNOT_ANSWER} instead of a query.
+  Never invent rows or answers with literal values.
 - Reply with the SQL only: no Markdown fences, comments or explanations."""
 
 
 def extract_sql(reply: str) -> str:
-    """Return the SQL in ``reply``, removing one surrounding Markdown fence if present."""
+    """Return the SQL in ``reply``, removing one surrounding Markdown fence if present.
+
+    Raises ``UnsupportedQuestionError`` when the model says no read-only query fits.
+    """
     candidate = reply.strip()
     match = FENCE_PATTERN.match(candidate)
     if match:
         candidate = match.group(1).strip()
     if not candidate:
         raise LLMInvalidResponseError()
+    if candidate.rstrip(";").strip().upper() == CANNOT_ANSWER:
+        raise UnsupportedQuestionError()
     return candidate
 
 

@@ -38,6 +38,13 @@ class LLMRefusedError(AppError):
     default_message = "The language model declined to answer this question."
 
 
+class UnsupportedQuestionError(AppError):
+    code = "unsupported_question"
+    default_message = (
+        "This question cannot be answered with a read-only query over the orders data."
+    )
+
+
 class SQLValidationError(AppError):
     """Raised when SQL is not a single, read-only query over the allowed tables."""
 

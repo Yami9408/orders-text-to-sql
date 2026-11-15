@@ -26,6 +26,7 @@ STATUS_BY_CODE: dict[str, HTTPStatus] = {
     "llm_timeout": HTTPStatus.GATEWAY_TIMEOUT,
     "llm_invalid_response": HTTPStatus.BAD_GATEWAY,
     "llm_refused": HTTPStatus.UNPROCESSABLE_ENTITY,
+    "unsupported_question": HTTPStatus.UNPROCESSABLE_ENTITY,
     "sql_rejected": HTTPStatus.UNPROCESSABLE_ENTITY,
     "query_timeout": HTTPStatus.GATEWAY_TIMEOUT,
     "query_failed": HTTPStatus.INTERNAL_SERVER_ERROR,

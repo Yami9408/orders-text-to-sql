@@ -246,4 +246,4 @@ In these runs Claude never produced dangerous SQL, so the validator and the read
 
 **How it was validated.** 89 automated tests, Ruff lint and format checks, the 14 real-model questions cross-checked against hand-written SQL, and a final run of every command in this README from a fresh clone and virtual environment.
 
-**Time spent.** About 2 hours, including about 1 hour writing the first specification.
+**Time spent.** About 3 hours in total: about 1 hour writing my first specification, then a little over 2 hours reviewing it with Claude, implementing, testing with the real model and writing this README. The commit history covers the last hour, from the first commit to this README.

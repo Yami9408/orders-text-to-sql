@@ -8,6 +8,9 @@ from sqlglot import exp
 from sqlglot.errors import SqlglotError
 
 from app.database import ORDERS_TABLE, VIEWS
+from app.errors import SQLValidationError
+
+__all__ = ["SQLValidationError", "validate_sql"]
 
 DIALECT = "sqlite"
 ALLOWED_TABLES: frozenset[str] = frozenset({ORDERS_TABLE, *VIEWS})
@@ -39,10 +42,6 @@ FORBIDDEN_NODES: tuple[type[exp.Expression], ...] = (
 FORBIDDEN_FUNCTIONS: frozenset[str] = frozenset(
     {"load_extension", "readfile", "writefile", "edit", "fts3_tokenizer"}
 )
-
-
-class SQLValidationError(ValueError):
-    """Raised when SQL is not a single, read-only query over the allowed tables."""
 
 
 def _parse_single_statement(sql: str) -> exp.Expression:

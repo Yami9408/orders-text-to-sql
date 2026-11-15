@@ -20,19 +20,19 @@ ORDER_COLUMNS: tuple[str, ...] = (
     "status",
 )
 
+ORDERS_DDL = f"""CREATE TABLE {ORDERS_TABLE} (
+    order_id   TEXT PRIMARY KEY,
+    order_date TEXT NOT NULL,  -- ISO date, YYYY-MM-DD
+    customer   TEXT NOT NULL,
+    country    TEXT NOT NULL,
+    product    TEXT NOT NULL,
+    amount     REAL NOT NULL,
+    status     TEXT NOT NULL
+)"""
+
 SCHEMA_STATEMENTS: tuple[str, ...] = (
     f"DROP TABLE IF EXISTS {ORDERS_TABLE}",
-    f"""
-    CREATE TABLE {ORDERS_TABLE} (
-        order_id   TEXT PRIMARY KEY,
-        order_date TEXT NOT NULL,
-        customer   TEXT NOT NULL,
-        country    TEXT NOT NULL,
-        product    TEXT NOT NULL,
-        amount     REAL NOT NULL,
-        status     TEXT NOT NULL
-    )
-    """,
+    ORDERS_DDL,
     f"CREATE INDEX idx_orders_date ON {ORDERS_TABLE}(order_date)",
     f"CREATE INDEX idx_orders_country ON {ORDERS_TABLE}(country)",
     f"CREATE INDEX idx_orders_customer ON {ORDERS_TABLE}(customer)",
@@ -45,7 +45,7 @@ def create_write_engine(path: Path) -> Engine:
     return create_engine(f"sqlite:///{path}")
 
 
-def _sql_statements(script: str) -> list[str]:
+def sql_statements(script: str) -> list[str]:
     """Split a SQL script into statements, dropping ``--`` comments and blanks.
 
     Enough for ``sql/views.sql``, which has no semicolons inside literals.
@@ -54,9 +54,15 @@ def _sql_statements(script: str) -> list[str]:
     return [statement.strip() for statement in "\n".join(lines).split(";") if statement.strip()]
 
 
+def view_definitions(views_file: Path = VIEWS_FILE) -> list[str]:
+    """Return the ``CREATE VIEW`` statements of ``views_file``."""
+    statements = sql_statements(views_file.read_text(encoding="utf-8"))
+    return [statement for statement in statements if statement.upper().startswith("CREATE VIEW")]
+
+
 def create_views(connection: Connection, views_file: Path = VIEWS_FILE) -> None:
     """Create or replace the analytical views defined in ``views_file``."""
-    for statement in _sql_statements(views_file.read_text(encoding="utf-8")):
+    for statement in sql_statements(views_file.read_text(encoding="utf-8")):
         connection.execute(text(statement))
 
 

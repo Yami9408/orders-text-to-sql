@@ -7,9 +7,10 @@ class AppError(Exception):
     code = "internal_error"
     default_message = "Unexpected error."
 
-    def __init__(self, message: str | None = None) -> None:
+    def __init__(self, message: str | None = None, *, sql: str | None = None) -> None:
         super().__init__(message or self.default_message)
         self.message = message or self.default_message
+        self.sql = sql  # the offending SQL, when it is safe and useful to return it
 
 
 class LLMNotConfiguredError(AppError):

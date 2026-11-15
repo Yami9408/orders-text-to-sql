@@ -3,7 +3,7 @@
 from pathlib import Path
 
 import pandas as pd
-from sqlalchemy import Connection, Engine, create_engine, text
+from sqlalchemy import Connection, Engine, create_engine, event, text
 
 from app.config import PROJECT_ROOT
 
@@ -43,6 +43,24 @@ def create_write_engine(path: Path) -> Engine:
     """Return a read-write engine for loading data, creating the parent folder if needed."""
     path.parent.mkdir(parents=True, exist_ok=True)
     return create_engine(f"sqlite:///{path}")
+
+
+def create_read_only_engine(path: Path) -> Engine:
+    """Return an engine that can only read: the file is opened read-only and
+    ``PRAGMA query_only`` is set on every connection. Fails on use if the file is missing.
+    """
+    engine = create_engine(
+        f"sqlite:///file:{path}?mode=ro&uri=true",
+        connect_args={"check_same_thread": False},
+    )
+
+    @event.listens_for(engine, "connect")
+    def _enable_query_only(dbapi_connection, _record) -> None:
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA query_only = ON")
+        cursor.close()
+
+    return engine
 
 
 def sql_statements(script: str) -> list[str]:
